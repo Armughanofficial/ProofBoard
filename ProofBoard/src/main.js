@@ -15,15 +15,17 @@ const CAT={
 };
 
 const ABI = [
- 'function submitContribution(string title, string proofUrl) returns (uint256)',
+ 'function submitContribution(string title, string proofUrl, string category) returns (uint256)',
  'function approveContribution(uint256 contributionId)',
  'function rejectContribution(uint256 contributionId)',
  'function getContribution(uint256 contributionId) view returns (address contributor, string title, string proofUrl, uint8 status, uint256 tokenId)',
  'function getContributionCount() view returns (uint256)',
+ 'function getContributionCategory(uint256 contributionId) view returns (string)',
+ 'function tokenURI(uint256 tokenId) view returns (string)',
  'function owner() view returns (address)'
 ];
 
-const CONTRACT_ADDRESS = '0x2d9CbBC3E0Bad0128aD31dC61930D65e1A2Cb8d5';
+const CONTRACT_ADDRESS = '0x1426AfeBa275b96d79A28FE3C553ba70fD132866';
 const SEPOLIA_CHAIN_ID = 11155111n;
 
 const getProvider = () =>
@@ -54,13 +56,16 @@ const loadContributions = async () => {
 
  const records=await Promise.all(
   Array.from({length:count},(_,i)=>
-   contract.getContribution(i+1).then(c=>({
+   Promise.all([
+    contract.getContribution(i+1),
+    contract.getContributionCategory(i+1)
+   ]).then(([c,category])=>({
     id:i+1,
     title:c.title,
     url:c.proofUrl,
     by:shorten(c.contributor),
     a:c.contributor,
-    cat:'Code',
+    cat:category,
     st:['pending','approved','rejected'][Number(c.status)],
     d:'On-chain',
     tok:Number(c.tokenId)
@@ -149,10 +154,23 @@ function Wallet({w,setW,toast}){
   setW({s:'connecting'});
 
   try{
-   const accounts=await provider.send('eth_requestAccounts',[]);
-   await checkSepolia(provider);
+   const accounts=await window.ethereum.request({
+    method:'eth_requestAccounts'
+   });
 
-   const balance=await provider.getBalance(accounts[0]);
+   const chainId=await window.ethereum.request({
+    method:'eth_chainId'
+   });
+
+   if(BigInt(chainId)!==SEPOLIA_CHAIN_ID)
+    throw new Error('Switch MetaMask to Sepolia first.');
+
+   const balanceHex=await window.ethereum.request({
+    method:'eth_getBalance',
+    params:[accounts[0],'latest']
+   });
+
+   const balance=BigInt(balanceHex);
 
    setW({
     s:'connected',
@@ -364,7 +382,7 @@ function App(){
 
   const ok=await write(
    'submitContribution',
-   [form.t.trim(),url],
+   [form.t.trim(),url,form.c],
    'Submitted on Sepolia. Waiting for admin review'
   );
 
