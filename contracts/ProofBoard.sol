@@ -143,7 +143,7 @@ contract ProofBoard is ERC721, Ownable {
         uint256 contributionId = tokenContributions[tokenId];
         Contribution storage c = contributions[contributionId];
 
-        string memory image = Base64.encode(bytes(_badgeSVG(tokenId, c.category)));
+        string memory image = Base64.encode(bytes(_badgeSVG(tokenId, c.category, c.title)));
 
         string memory json = string(
             abi.encodePacked(
@@ -179,56 +179,125 @@ contract ProofBoard is ERC721, Ownable {
 
         uint256 contributionId = tokenContributions[tokenId];
 
-        return _badgeSVG(tokenId, contributions[contributionId].category);
+        return _badgeSVG(tokenId, contributions[contributionId].category, contributions[contributionId].title);
     }
 
-    function _badgeSVG(uint256 tokenId, string memory category)
-        internal
-        pure
-        returns (string memory)
-    {
-        string memory accent = "#8B5CF6";
+    function _badgeSVG(
+        uint256 tokenId,
+        string memory category,
+        string memory title
+    ) internal pure returns (string memory) {
+        string memory a = "#8f7dff";
+        string memory b = "#5ff0c0";
+        string memory glyph = "{ }";
 
-        if (_equals(category, "Code")) accent = "#22D3EE";
-        if (_equals(category, "Docs")) accent = "#FBBF24";
-        if (_equals(category, "Design")) accent = "#F472B6";
-        if (_equals(category, "Security")) accent = "#34D399";
+        if (_equals(category, "Docs")) {
+            a = "#5ff0c0"; b = "#7ab8ff"; glyph = "&#182;";
+        } else if (_equals(category, "Design")) {
+            a = "#ff8fd0"; b = "#8f7dff"; glyph = "&#9670;";
+        } else if (_equals(category, "Security")) {
+            a = "#ffc46b"; b = "#ff7a90"; glyph = "&#167;";
+        }
 
-        return string(
-            abi.encodePacked(
-                '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="520" viewBox="0 0 400 520">',
-                '<rect width="400" height="520" rx="24" fill="#0B1020"/>',
-                '<rect x="14" y="14" width="372" height="492" rx="18" fill="none" stroke="',
-                accent,
-                '" stroke-opacity=".55"/>',
-                '<text x="200" y="64" text-anchor="middle" fill="#E2E8F0" font-family="monospace" font-size="21" letter-spacing="3">PROOFBOARD</text>',
-                '<circle cx="200" cy="235" r="112" fill="none" stroke="',
-                accent,
-                '" stroke-opacity=".3" stroke-width="2"/>',
-                '<ellipse cx="200" cy="235" rx="108" ry="42" fill="none" stroke="',
-                accent,
-                '" stroke-width="3" transform="rotate(-35 200 235)"/>',
-                '<ellipse cx="200" cy="235" rx="108" ry="42" fill="none" stroke="',
-                accent,
-                '" stroke-width="3" transform="rotate(35 200 235)"/>',
-                '<circle cx="200" cy="235" r="33" fill="',
-                accent,
-                '" fill-opacity=".2" stroke="',
-                accent,
-                '" stroke-width="3"/>',
-                '<text x="200" y="243" text-anchor="middle" fill="#FFFFFF" font-family="monospace" font-size="25">PB</text>',
-                '<text x="200" y="390" text-anchor="middle" fill="#FFFFFF" font-family="monospace" font-size="24">',
-                category,
-                '</text>',
-                '<text x="200" y="425" text-anchor="middle" fill="#94A3B8" font-family="monospace" font-size="15">VERIFIED CONTRIBUTION</text>',
-                '<text x="200" y="470" text-anchor="middle" fill="',
-                accent,
-                '" font-family="monospace" font-size="18">TOKEN #',
-                tokenId.toString(),
-                '</text>',
-                '</svg>'
-            )
+        bytes memory rings;
+
+        for (uint256 i = 0; i < 14; i++) {
+            rings = abi.encodePacked(
+                rings,
+                '<ellipse rx="72" ry="26" transform="rotate(',
+                (i * 12857 / 1000).toString(),
+                ')" fill="none" stroke="url(#grad)" stroke-width=".8" opacity=".75"/>'
+            );
+        }
+
+        // Ten offset circular rings, matching the frontend pattern.
+        int256[10] memory xs = [int256(22), 17, 6, -6, -17, -22, -17, -6, 6, 17];
+        int256[10] memory ys = [int256(0), 13, 21, 21, 13, 0, -13, -21, -21, -13];
+
+        for (uint256 i = 0; i < 10; i++) {
+            rings = abi.encodePacked(
+                rings,
+                '<ellipse rx="50" ry="50" cx="',
+                _signedString(xs[i]),
+                '" cy="',
+                _signedString(ys[i]),
+                '" fill="none" stroke="#ffffff22" stroke-width=".6"/>'
+            );
+        }
+
+        bytes memory titleBytes = bytes(title);
+        if (titleBytes.length > 26) {
+            bytes memory shortTitle = new bytes(25);
+            for (uint256 i = 0; i < 25; i++) {
+                shortTitle[i] = titleBytes[i];
+            }
+            title = string(abi.encodePacked(shortTitle, "..."));
+        }
+
+        bytes memory svg = abi.encodePacked(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1040" viewBox="0 0 200 260">',
+            '<defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">',
+            '<stop offset="0" stop-color="', a, '"/>',
+            '<stop offset="1" stop-color="', b, '"/>',
+            '</linearGradient><radialGradient id="bg" cx=".5" cy=".4" r=".7">',
+            '<stop offset="0" stop-color="', a, '" stop-opacity=".28"/>',
+            '<stop offset=".7" stop-color="#0d0d14"/>',
+            '</radialGradient></defs>'
         );
+
+        svg = abi.encodePacked(
+            svg,
+            '<rect x="1" y="1" width="198" height="258" rx="19" fill="url(#bg)" stroke="url(#grad)" stroke-width="1.4"/>',
+            '<rect x="9" y="9" width="182" height="242" rx="13" fill="none" stroke="#ffffff" stroke-opacity=".08"/>',
+            '<text x="20" y="30" fill="', a, '" font-family="monospace" font-size="8.5">proofboard / s1</text>',
+            '<text x="180" y="30" text-anchor="end" fill="#ffffff" opacity=".5" font-family="monospace" font-size="8.5">#',
+            tokenId.toString(), '</text>'
+        );
+
+        svg = abi.encodePacked(
+            svg,
+            '<g transform="translate(100 120)">',
+            rings,
+            '<circle r="31" fill="#0b0b11" stroke="url(#grad)" stroke-width="1.5"/>',
+            '<text text-anchor="middle" y="9" font-family="serif" font-size="28" fill="', a, '">',
+            glyph, '</text></g>'
+        );
+
+        svg = abi.encodePacked(
+            svg,
+            '<line x1="20" x2="180" y1="203" y2="203" stroke="#ffffff" stroke-opacity=".1"/>',
+            '<text x="20" y="223" fill="#ecebf3" font-family="serif" font-size="15">',
+            _escapeXML(title), '</text>',
+            '<text x="20" y="241" fill="', b, '" font-family="monospace" font-size="8.5">',
+            _escapeXML(category), ' contributor</text></svg>'
+        );
+
+        return string(svg);
+    }
+
+    function _signedString(int256 value) private pure returns (string memory) {
+        if (value < 0) {
+            return string(abi.encodePacked("-", uint256(-value).toString()));
+        }
+        return uint256(value).toString();
+    }
+
+    function _escapeXML(string memory input) private pure returns (string memory) {
+        bytes memory source = bytes(input);
+        bytes memory output;
+
+        for (uint256 i = 0; i < source.length; i++) {
+            bytes1 ch = source[i];
+
+            if (ch == 0x26) output = abi.encodePacked(output, "&amp;");
+            else if (ch == 0x3c) output = abi.encodePacked(output, "&lt;");
+            else if (ch == 0x3e) output = abi.encodePacked(output, "&gt;");
+            else if (ch == 0x22) output = abi.encodePacked(output, "&quot;");
+            else if (ch == 0x27) output = abi.encodePacked(output, "&apos;");
+            else output = abi.encodePacked(output, ch);
+        }
+
+        return string(output);
     }
 
     function _validCategory(string memory category) private pure returns (bool) {

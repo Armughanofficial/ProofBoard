@@ -1,19 +1,18 @@
 # ProofBoard
 
-Frontend demo for a Web3 contribution recognition platform. All wallet, review and minting behavior is simulated; there is no backend or blockchain logic.
+ProofBoard is a decentralized contribution recognition platform deployed on Ethereum Sepolia.
 
-## Run locally
+Contributors submit proof of their work, an authorized reviewer approves or rejects submissions, and approved contributions receive generative ERC-721 NFT badges.
 
-```
+## Live Smart Contract
+
+Network: Ethereum Sepolia
+
+Contract: `0x4873D1B0C76588A66Cc4e8675e920bF12389E62c`
+
+## Local Development
+
+```bash
+cd ProofBoard
 npm install
 npm run dev
-```
-
-Then open the URL Vite prints (usually http://localhost:5173).
-
-## Structure
-
-- `index.html` – entry page and Google Fonts
-- `src/main.js` – the React app (components written with `htm` tagged templates)
-- `src/styles.css` – all styling
-- `public/favicon.svg` – icon

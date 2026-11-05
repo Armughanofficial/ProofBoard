@@ -25,7 +25,7 @@ const ABI = [
  'function owner() view returns (address)'
 ];
 
-const CONTRACT_ADDRESS = '0x1426AfeBa275b96d79A28FE3C553ba70fD132866';
+const CONTRACT_ADDRESS = '0x4873D1B0C76588A66Cc4e8675e920bF12389E62c';
 const SEPOLIA_CHAIN_ID = 11155111n;
 
 const getProvider = () =>
@@ -42,7 +42,7 @@ const cleanError = e =>
 const checkSepolia = async provider => {
  const network = await provider.getNetwork();
  if(network.chainId !== SEPOLIA_CHAIN_ID)
-  throw new Error('Switch MetaMask to Sepolia first.');
+ throw new Error('Switch MetaMask to Hardhat Localhost first.');
 };
 
 const loadContributions = async () => {
